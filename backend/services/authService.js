@@ -10,14 +10,32 @@ const { generateToken } = require("../utils/jwtHelper");
  * @returns {Object} - User object and token
  */
 const registerUser = async (username, email, password) => {
-	/**
-	 * TODO: Implementați funcția de înregistrare a unui utilizator.
-	 * Aceasta ar trebui să includă:
-	 * 1. Verificarea dacă utilizatorul există deja în baza de date (după email sau username).
-	 * 2. Crearea unui nou utilizator dacă nu există deja.
-	 * 3. Generarea unui token JWT pentru autentificare.
-	 * 4. Returnarea obiectului utilizator și a tokenului generat.
-	 */
+	const existingUser = await User.findOne({
+		where: {
+			[Sequelize.Op.or]: [{ email }, { username }],
+		},
+	});
+
+	if (existingUser) {
+		throw new Error("User already exists");
+	}
+
+	const user = await User.create({
+		username,
+		email,
+		password,
+	});
+
+	const token = generateToken({
+		id: user.id,
+		email: user.email,
+		username: user.username,
+	});
+
+	return {
+		user: user.toJSON(),
+		token,
+	};
 };
 
 /**
@@ -27,14 +45,33 @@ const registerUser = async (username, email, password) => {
  * @returns {Object} - User object and token
  */
 const loginUser = async (email, password) => {
-	/**
-	 * TODO: Implementați funcția de autentificare a unui utilizator.
-	 * Aceasta ar trebui să includă:
-	 * 1. Căutarea utilizatorului în baza de date pe baza emailului.
-	 * 2. Verificarea parolei utilizatorului.
-	 * 3. Generarea unui token JWT pentru sesiunea utilizatorului.
-	 * 4. Returnarea utilizatorului (fără parolă) și a tokenului generat.
-	 */
+	const user = await User.scope("withPassword").findOne({
+		where: { email },
+	});
+
+	if (!user) {
+		throw new Error("Invalid email or password");
+	}
+
+	const isPasswordValid = await user.comparePassword(password);
+
+	if (!isPasswordValid) {
+		throw new Error("Invalid email or password");
+	}
+
+	const token = generateToken({
+		id: user.id,
+		email: user.email,
+		username: user.username,
+	});
+
+	const userData = user.toJSON();
+	delete userData.password;
+
+	return {
+		user: userData,
+		token,
+	};
 };
 
 module.exports = {

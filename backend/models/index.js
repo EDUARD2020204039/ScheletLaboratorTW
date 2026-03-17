@@ -5,10 +5,6 @@ const Book = require("./Book");
 const BookDetail = require("./BookDetail");
 const Notification = require("./Notifications");
 
-/**
- * TODO: Definiți relațiile dintre modelele bazei de date.
- */
-
 User.belongsToMany(Role, { through: "UserRoles", foreignKey: "userId" });
 Role.belongsToMany(User, { through: "UserRoles", foreignKey: "roleId" });
 
